@@ -1,0 +1,33 @@
+# Archivos y carpetas específicos del entorno de desarrollo
+.vscode/
+.idea/
+*.code-workspace
+
+# Dependencias locales y artefactos de construcción que se regenerarán en Docker
+**/node_modules
+**/__pycache__
+**/dist
+**/build
+front_colpryst/dist
+front_colpryst/node_modules
+backend_colpryst/node_modules
+backend_facial_auth/__pycache__
+backend_facial_auth/venv
+
+# Archivos Git
+.git/
+.gitignore
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos grandes o innecesarios
+SELENIUM.rar
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Documentación (a menos que necesites servirla desde la app)
+docs/

@@ -1,0 +1,87 @@
+services:
+  backend-colpryst:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-colpryst
+    container_name: backend-colpryst-app
+    ports:
+      - "3000:3000"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    networks:
+      - colpryst-net
+    environment:
+      - DOCKER_ENV=true
+      - DATABASE_HOST=mysql-db
+      - DATABASE_USER=colpryst_user
+      - DATABASE_PASSWORD=user_password123
+      - DATABASE_NAME=colpryst_db # Asegúrate que este nombre coincida con el de MYSQL_DATABASE en el servicio mysql-db
+    volumes:
+      # Montar archivos y carpetas específicos para el desarrollo del backend:
+      - ./backend_colpryst/app.js:/app/backend_colpryst/app.js
+      - ./backend_colpryst/package.json:/app/backend_colpryst/package.json
+      # Considera si package-lock.json también debe montarse o si es mejor que provenga de la imagen
+      # - ./backend_colpryst/package-lock.json:/app/backend_colpryst/package-lock.json 
+      - ./backend_colpryst/src:/app/backend_colpryst/src
+      - ./backend_colpryst/swaggerConfig.js:/app/backend_colpryst/swaggerConfig.js
+      # Puedes añadir otros archivos o carpetas de tu backend que necesites modificar en vivo:
+      # - ./backend_colpryst/tus_otros_archivos_o_carpetas:/app/backend_colpryst/tus_otros_archivos_o_carpetas
+
+      # Este volumen es para node_modules, para evitar que los node_modules del host 
+      # sobrescriban los del contenedor (que fueron instalados según el package-lock.json de la imagen)
+      # y para persistir módulos si se instalan dentro del contenedor.
+      - /app/backend_colpryst/node_modules
+      # La carpeta /app/backend_colpryst/public ya no se sobrescribe desde el host,
+      # por lo que se usará la que está en la imagen Docker (con tu frontend React construido).
+
+  backend-facial-auth:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-facial-auth
+    container_name: backend-facial-auth-app
+    ports:
+      - "8000:8000"
+    networks:
+      - colpryst-net
+    environment:
+      - DATABASE_HOST=mysql-db
+      - DATABASE_USER=colpryst_user
+      - DATABASE_PASSWORD=user_password123
+      - DATABASE_NAME=colpryst_db # Asegúrate que este nombre coincida con el de MYSQL_DATABASE en el servicio mysql-db
+    volumes:
+      - ./backend_facial_auth:/app/backend_facial_auth
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-colpryst-db
+    ports:
+      - "33061:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password123
+      MYSQL_DATABASE: colpryst_db # Nombre de la BD que usará el backend de Node
+      MYSQL_USER: colpryst_user
+      MYSQL_PASSWORD: user_password123
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./backend_colpryst/sql_colpryst.txt:/docker-entrypoint-initdb.d/init.sql # Modificado para usar sql_colpryst.txt
+    networks:
+      - colpryst-net
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u$$MYSQL_USER", "-p$$MYSQL_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s # Darle tiempo a MySQL para que inicie antes de empezar los healthchecks
+
+networks:
+  colpryst-net:
+    driver: bridge
+
+volumes:
+  mysql-data:
