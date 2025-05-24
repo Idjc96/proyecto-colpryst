@@ -10,8 +10,8 @@ Este proyecto tiene como objetivo crear una solución integral para el **registr
 /root
 │
 ├── backend_colpryst/       # Backend Node.js (Express)
-├── front_colpryst/            # Frontend React + Vite
-└── backend_facial_auth/                  # Backend de reconocimiento facial (Python)
+├── front_colpryst/         # Frontend React + Vite
+└── backend_facial_auth/    # Backend de reconocimiento facial (Python)
 ```
 
 ---
@@ -260,7 +260,7 @@ docker-compose down
 *   **Control de Versiones (Git):** Fundamental.
 *   **Archivo `.dockerignore`:** Se usa para excluir archivos innecesarios del contexto de construcción de la imagen.
 *   **Variables de Entorno:** Usar variables de entorno para la configuración sensible o específica del entorno.
-*   **Imágenes Pequeñas:** Usar que tus imágenes Docker sean lo más pequeñas posible (usando multi-stage builds, imágenes base ligeras).
+*   **Imágenes Pequeñas:** que las imágenes Docker sean lo más pequeñas posible (usando multi-stage builds, imágenes base ligeras).
 
 ---
 
