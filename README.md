@@ -157,6 +157,113 @@ Para verificar que la base de datos esté conectada correctamente:
 
 ---
 
+## 🐳 Guía de Uso de Docker para el Proyecto Colpryst
+
+Esta guía explica cómo utilizar Docker y Docker Compose para configurar y ejecutar el entorno de desarrollo del proyecto Colpryst.
+
+### Conceptos Clave
+
+*   **`Dockerfile`**: Define cómo se construye la imagen de una aplicación individual. Contiene los pasos para instalar dependencias, copiar código y demas.
+*   **`docker-compose.yml`**: Orquesta múltiples contenedores (servicios) definidos en los Dockerfiles. Define cómo se inician, se conectan en red, qué puertos exponen y qué volúmenes usan.
+*   **Imágenes Docker**: Son plantillas de solo lectura que contienen la aplicación y sus dependencias. Se construyen a partir de un `Dockerfile`.
+*   **Contenedores Docker**: Son instancias en ejecución de una imagen Docker.
+*   **Volúmenes Docker**: Persisten datos generados por los contenedores (como los datos de la base de datos MySQL) o montan el código fuente local dentro del contenedor para desarrollo en vivo.
+
+### Flujo de Trabajo Básico
+
+#### 1. Requisitos Previos (para todos los colaboradores)
+*   Tener Docker Desktop (o Docker Engine y Docker Compose CLI en Linux) instalado.
+*   Clonar el repositorio del proyecto (que incluye `Dockerfile`, `docker-compose.yml`, y todo el código fuente).
+
+#### 2. Iniciar el Entorno por Primera Vez (o después de cambios en `Dockerfile` o dependencias)
+*   Abrir una terminal en la raíz del proyecto (donde está `docker-compose.yml`).
+*   Ejecuta:
+    ```powershell
+    docker-compose up --build -d
+    ```
+    *   `up`: Crea e inicia los contenedores.
+    *   `--build`: Fuerza la reconstrucción de las imágenes si han cambiado los `Dockerfile` o los archivos de contexto de construcción (por ejemplo, si se agrega una nueva dependencia en `package.json` o `requirements.txt`).
+    *   `-d`: (Detached mode) Ejecuta los contenedores en segundo plano.
+
+#### 3. Iniciar el Entorno (si las imágenes ya están construidas y no hay cambios en Dockerfiles/dependencias)
+```powershell
+docker-compose up -d
+```
+
+#### 4. Ver Logs de los Contenedores
+*   Para ver los logs de todos los servicios:
+    ```powershell
+    docker-compose logs -f
+    ```
+*   Para ver los logs de un servicio específico (por ejemplo, `backend-colpryst-app`):
+    ```powershell
+    docker-compose logs -f backend-colpryst-app
+    ```
+    (El nombre del servicio puede variar ligeramente, verifica con `docker ps`).
+
+#### 5. Detener el Entorno
+```powershell
+docker-compose down
+```
+*   Esto detiene y elimina los contenedores, redes y, opcionalmente, volúmenes (si se especifica). Los datos en volúmenes nombrados (como `proyecto-colpryst_mysql-data`) persistirán a menos que se eliminen manualmente.
+
+### Colaboración y Manejo de Cambios
+
+#### Cambios en el Código Fuente (por ejemplo, archivos `.js`, `.py`, `.html`)
+*   Gracias a los volúmenes configurados en `docker-compose.yml`, los cambios en el código local se reflejarán automáticamente dentro de los contenedores.
+*   Para Node.js con `nodemon` o servidores de desarrollo de frontend (como Vite), el servidor dentro del contenedor debería reiniciarse o recargar automáticamente.
+*   Si no hay recarga automática, reinicia el servicio específico:
+    ```powershell
+    docker-compose restart nombre-del-servicio-app
+    ```
+
+#### Cambios en Dependencias (por ejemplo, `package.json`, `requirements.txt`) o en `Dockerfile`
+*   Si se modifica estos archivos, las imágenes Docker deben reconstruirse:
+    ```powershell
+    docker-compose up --build -d
+    ```
+    o
+    ```powershell
+    docker-compose build
+    docker-compose up -d
+    ```
+
+#### Cambios en la Configuración de `docker-compose.yml`
+*   Si se modifica `docker-compose.yml`, simplemente ejecuta:
+    ```powershell
+    docker-compose up -d
+    ```
+    Docker Compose aplicará los cambios necesarios.
+
+#### Cambios en el Esquema de la Base de Datos (`sql_colpryst.txt`)
+*   El archivo `sql_colpryst.txt` se usa para inicializar la base de datos la primera vez.
+*   Si cambia este archivo para modificar el esquema:
+    1.  Detén los servicios: `docker-compose down`
+    2.  **Importante**: Elimina el volumen de MySQL para forzar la reinicialización (esto borrará todos los datos actuales de la base de datos):
+        ```powershell
+        docker volume rm proyecto-colpryst_mysql-data
+        ```
+        (Verifica el nombre del volumen con `docker volume ls`).
+    3.  Vuelve a iniciar con reconstrucción:
+        ```powershell
+        docker-compose up --build -d
+        ```
+
+### Compartir el Proyecto
+
+1.  Asegúrar de que todos los archivos necesarios (`Dockerfile`, `docker-compose.yml`, código fuente) estén en el sistema de control de versiones (Git).
+2.  Compañeros clonan el repositorio.
+3.  Ellos ejecutan `docker-compose up --build -d` en sus máquinas.
+
+### Buenas Prácticas
+
+*   **Control de Versiones (Git):** Fundamental.
+*   **Archivo `.dockerignore`:** Se usa para excluir archivos innecesarios del contexto de construcción de la imagen.
+*   **Variables de Entorno:** Usar variables de entorno para la configuración sensible o específica del entorno.
+*   **Imágenes Pequeñas:** Usar que tus imágenes Docker sean lo más pequeñas posible (usando multi-stage builds, imágenes base ligeras).
+
+---
+
 ## 📬 Contacto
 
 Desarrollado para: **Colpryst Asesores Ltda**  
@@ -236,108 +343,4 @@ Copyright (c) 2025 Colpryst Asesores Ltda.
 
 ---
 
-## 🐳 Guía de Uso de Docker para el Proyecto Colpryst
 
-Esta guía explica cómo utilizar Docker y Docker Compose para configurar y ejecutar el entorno de desarrollo del proyecto Colpryst.
-
-### Conceptos Clave
-
-*   **`Dockerfile`**: Define cómo se construye la imagen de una aplicación individual (por ejemplo, tu backend de Node.js o tu backend de Python). Contiene los pasos para instalar dependencias, copiar código, etc.
-*   **`docker-compose.yml`**: Orquesta múltiples contenedores (servicios) definidos en tus Dockerfiles. Define cómo se inician, se conectan en red, qué puertos exponen y qué volúmenes usan.
-*   **Imágenes Docker**: Son plantillas de solo lectura que contienen tu aplicación y sus dependencias. Se construyen a partir de un `Dockerfile`.
-*   **Contenedores Docker**: Son instancias en ejecución de una imagen Docker.
-*   **Volúmenes Docker**: Persisten datos generados por los contenedores (como los datos de tu base de datos MySQL) o montan tu código fuente local dentro del contenedor para desarrollo en vivo.
-
-### Flujo de Trabajo Básico
-
-#### 1. Requisitos Previos (para todos los colaboradores)
-*   Tener Docker Desktop (o Docker Engine y Docker Compose CLI en Linux) instalado.
-*   Clonar el repositorio del proyecto (que incluye `Dockerfile`, `docker-compose.yml`, y todo el código fuente).
-
-#### 2. Iniciar el Entorno por Primera Vez (o después de cambios en `Dockerfile` o dependencias)
-*   Abre una terminal en la raíz de tu proyecto (donde está `docker-compose.yml`).
-*   Ejecuta:
-    ```powershell
-    docker-compose up --build -d
-    ```
-    *   `up`: Crea e inicia los contenedores.
-    *   `--build`: Fuerza la reconstrucción de las imágenes si han cambiado los `Dockerfile` o los archivos de contexto de construcción (por ejemplo, si agregas una nueva dependencia en `package.json` o `requirements.txt`).
-    *   `-d`: (Detached mode) Ejecuta los contenedores en segundo plano.
-
-#### 3. Iniciar el Entorno (si las imágenes ya están construidas y no hay cambios en Dockerfiles/dependencias)
-```powershell
-docker-compose up -d
-```
-
-#### 4. Ver Logs de los Contenedores
-*   Para ver los logs de todos los servicios:
-    ```powershell
-    docker-compose logs -f
-    ```
-*   Para ver los logs de un servicio específico (por ejemplo, `backend-colpryst-app`):
-    ```powershell
-    docker-compose logs -f backend-colpryst-app
-    ```
-    (El nombre del servicio puede variar ligeramente, verifica con `docker ps`).
-
-#### 5. Detener el Entorno
-```powershell
-docker-compose down
-```
-*   Esto detiene y elimina los contenedores, redes y, opcionalmente, volúmenes (si se especifica). Los datos en volúmenes nombrados (como `proyecto-colpryst_mysql-data`) persistirán a menos que los elimines manualmente.
-
-### Colaboración y Manejo de Cambios
-
-#### Cambios en el Código Fuente (por ejemplo, archivos `.js`, `.py`, `.html`)
-*   Gracias a los volúmenes configurados en `docker-compose.yml`, los cambios en tu código local se reflejarán automáticamente dentro de los contenedores.
-*   Para Node.js con `nodemon` o servidores de desarrollo de frontend (como Vite), el servidor dentro del contenedor debería reiniciarse o recargar automáticamente.
-*   Si no hay recarga automática, reinicia el servicio específico:
-    ```powershell
-    docker-compose restart nombre-del-servicio-app
-    ```
-
-#### Cambios en Dependencias (por ejemplo, `package.json`, `requirements.txt`) o en `Dockerfile`
-*   Si modificas estos archivos, las imágenes Docker deben reconstruirse:
-    ```powershell
-    docker-compose up --build -d
-    ```
-    o
-    ```powershell
-    docker-compose build
-    docker-compose up -d
-    ```
-
-#### Cambios en la Configuración de `docker-compose.yml`
-*   Si modificas `docker-compose.yml`, simplemente ejecuta:
-    ```powershell
-    docker-compose up -d
-    ```
-    Docker Compose aplicará los cambios necesarios.
-
-#### Cambios en el Esquema de la Base de Datos (`sql_colpryst.txt`)
-*   Tu archivo `sql_colpryst.txt` se usa para inicializar la base de datos la primera vez.
-*   Si cambias este archivo para modificar el esquema:
-    1.  Detén los servicios: `docker-compose down`
-    2.  **Importante**: Elimina el volumen de MySQL para forzar la reinicialización (esto borrará todos los datos actuales de la base de datos):
-        ```powershell
-        docker volume rm proyecto-colpryst_mysql-data
-        ```
-        (Verifica el nombre del volumen con `docker volume ls`).
-    3.  Vuelve a iniciar con reconstrucción:
-        ```powershell
-        docker-compose up --build -d
-        ```
-*   **Nota sobre Migraciones**: Para proyectos más grandes, considera usar herramientas de migración de esquemas (como Knex.js para Node, Alembic para Python) para aplicar cambios incrementales sin perder datos.
-
-### Compartir el Proyecto
-
-1.  Asegúrate de que todos los archivos necesarios (`Dockerfile`, `docker-compose.yml`, código fuente) estén en tu sistema de control de versiones (Git).
-2.  Tus compañeros clonan el repositorio.
-3.  Ellos ejecutan `docker-compose up --build -d` en sus máquinas.
-
-### Buenas Prácticas
-
-*   **Control de Versiones (Git):** Fundamental.
-*   **Archivo `.dockerignore`:** Úsalo para excluir archivos innecesarios del contexto de construcción de la imagen.
-*   **Variables de Entorno:** Usa variables de entorno para la configuración sensible o específica del entorno.
-*   **Imágenes Pequeñas:** Intenta que tus imágenes Docker sean lo más pequeñas posible (usando multi-stage builds, imágenes base ligeras).
