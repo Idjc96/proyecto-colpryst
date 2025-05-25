@@ -22,7 +22,7 @@ Este proyecto tiene como objetivo crear una solución integral para el **registr
 
 1. Ir al directorio:
    ```bash
-   cd bee_express_pruebaback
+   cd bee_express_pruebabac
    ```
 
 2. Instalar dependencias:
